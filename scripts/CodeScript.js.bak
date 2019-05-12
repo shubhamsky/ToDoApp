@@ -1,0 +1,203 @@
+
+		$(document).ready(function(){
+			var dateString = new Date(); // date string
+			var actualDate = new Date(dateString);// convert to actual date
+			var newDate = new Date(actualDate.getFullYear(), actualDate.getMonth(), actualDate.getDate()+60); // create new increased date
+
+			// now extract the bits we want to create the text version of the new date..
+			var currentDate=('0'+dateString.getDate()).substr(-2) + ' ' + dateString.toDateString().substr(4,3) + ' ' + dateString.getFullYear();
+			
+			$("#date").html("<center>"+currentDate+"</center>")
+			
+			$("#Pre").click(function(){
+			
+				event.preventDefault();
+				showRecords();
+				var dateString = $("#date").text(); // date string
+				var actualDate = new Date(dateString); // convert to actual date
+				var newDate = new Date(actualDate.getFullYear(), actualDate.getMonth(), actualDate.getDate()-1); // create new decreased date
+
+				// now extract the bits we want to create the text version of the new date..
+				var newDateString = ('0'+newDate.getDate()).substr(-2) + ' ' + newDate.toDateString().substr(4,3) + ' ' + newDate.getFullYear();
+				
+				$("#date").html("<center>"+newDateString+"</center>")
+			});
+			
+			$("#Next").click(function(){
+				event.preventDefault();
+				showRecords();
+				var dateString = $("#date").text(); // date string
+				var actualDate = new Date(dateString); // convert to actual date
+				var newDate = new Date(actualDate.getFullYear(), actualDate.getMonth(), actualDate.getDate()+1); // create new increased date
+				// now extract the bits we want to create the text version of the new date..
+				var newDateString = ('0'+newDate.getDate()).substr(-2) + ' ' + newDate.toDateString().substr(4,3) + ' ' + newDate.getFullYear();
+				
+				$("#date").html("<center>"+newDateString+"</center>")
+			});
+
+
+			//function call to initialize the Database connection when page is ready
+			initDatabase();
+			$("#Create").click(function(){
+					
+						event.preventDefault();
+						insertRecord();
+					
+				
+				});
+ 
+
+			});
+
+
+			//   SQLite Database        
+			var createStatement = "CREATE TABLE IF NOT EXISTS eventT (id INTEGER PRIMARY KEY AUTOINCREMENT, eventName TEXT, eventDate TEXT)";
+ 
+			var selectAllStatement = "SELECT * FROM eventT";
+			 
+			var insertStatement = "INSERT INTO eventT (eventName, eventDate) VALUES (?, ?)";
+			
+			var deleteStatement = "DELETE FROM eventT WHERE id=?";
+			
+			var db = openDatabase("Event", "1.0", "Address Book", 200000);  // Open SQLite Database
+ 
+			var dataset;
+			 
+			var DataType;
+			//initDatabase();
+			function initDatabase()  // Function Call When Page is ready.
+ 
+				{
+				 alert("test");
+					try {
+				 
+						if (!window.openDatabase){  // Check browser is supported SQLite or not.
+				        
+				 
+							alert('Databases are not supported in this browser.');
+				 
+						}
+				 
+						else {
+				 
+							createTable();  // If supported then call Function for create table in SQLite
+				 
+						}
+				 
+					}
+				 
+					catch (e) {
+				 
+							if (e == 2) {
+					 
+									// Version number mismatch. 
+						 
+									console.log("Invalid database version.");
+					 
+							}
+							else {
+					 
+								console.log("Unknown error " + e + ".");
+					 
+							}
+					 
+							return;
+				 
+					}
+				 
+				}
+				 
+				function createTable()  // Function for Create Table in SQLite.
+				 
+				{
+				 
+					db.transaction(function (tx) { tx.executeSql(createStatement, [], showRecords, onError); });
+				 
+				}
+				
+				function insertRecord() // Get value from Input and insert record . Function Call when Create Event Button Click..
+				 
+				{			// code for checking blank textbox event
+							if($('input').val().length !== 0 ) {
+					 
+							var EventDate = $("#date").text();
+					 
+							var EventName = $('input:text[name=EventName]').val();
+							db.transaction(function (tx) { tx.executeSql(insertStatement,
+								[EventName, EventDate], loadAndReset, onError); });
+								
+							//tx.executeSql(SQL Query Statement,[ Parameters ] , Success Result Handler Function, Error Result Handler Function );
+							}
+							else{
+								loadAndReset();
+								alert('Please Enter Event');
+							}
+				}
+				
+				
+				function showRecords() // Function For Retrieving data from Database to Display records as list
+ 
+				{
+				 
+					$("#list").html('')
+				 
+					db.transaction(function (tx) {
+				 var EventDate = $("#date").text();
+						tx.executeSql("SELECT id, eventName FROM eventT where eventDate='"+EventDate+"'", [], function (tx, result) {
+				 
+							dataset = result.rows;
+				 
+							for (var i = 0, item = null; i < dataset.length; i++) {
+				 
+								item = dataset.item(i);
+				 
+								var linkeditdelete = '<li>' + item['eventName'] + '    ' + '    ' +
+				 
+															'<a href="#" onclick="deleteRecord(' + item['id'] + ');">delete</a></li>';
+				 
+								$("#list").append(linkeditdelete);
+				 
+							}
+							// code to check limit of five events.
+							if(i==5){
+								alert('Five elements added');
+								$('#Create').prop('disabled', true);
+							}
+							else{	
+								$('#Create').prop('disabled', false);
+							}
+								
+						});
+				 
+					});
+				 
+				}
+				function onError(tx, error) // Function for Handling Error...
+ 
+				{
+				 
+					alert(error.message);
+				 
+				}
+				function loadAndReset() //Function for Load and Reset...
+ 				{
+				 	showRecords();
+				 
+				}
+				
+		
+
+		
+	function deleteRecord(id) // Get id of record . Function Call when Delete Button Click..
+ 
+				{  
+		 
+					var iddelete = id.toString();
+				 
+					db.transaction(function (tx) { tx.executeSql(deleteStatement, [id], showRecords, onError); alert("Delete Sucessfully"); });
+			
+					
+ 
+				}
+
+		
